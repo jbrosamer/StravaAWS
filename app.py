@@ -3,28 +3,39 @@
 import flask
 import logging
 import stravalib
-import os
-import RunUtils
+import os, sys
 
+
+
+
+sys.path.append("./application")
+import RunUtils
+from forms import RunsFilterForm
+
+defNRuns=10
 app = flask.Flask(__name__)
+app.runList=None
+app.athlete=None
+
 if os.environ.get('FIXSTRAVA_CONFIG') is None:
     os.environ['FIXSTRAVA_CONFIG']='settings.txt'
 app.config.from_envvar('FIXSTRAVA_CONFIG')
-# app.config['SECRET_KEY'] = 'cC1YCIWOj9GgWspgNEo2'
-# app.config['CLIENT_SECRET'] = '85a5f1be79a97e5fe19b99d12fa2196c81da4629'
-# app.config['CLIENT_ID'] = '7582'
 
 logging.basicConfig(level=logging.INFO)
 
-@app.route('/')
-def homepage():
-    if 'access_token' not in flask.session:
-        return flask.redirect(flask.url_for('login'))
-    return flask.redirect(flask.url_for('prediction'))
+# @app.route('/')
+# def runs():
+#     if 'access_token' not in flask.session:
+#         return flask.redirect(flask.url_for('login'))
+#     client = stravalib.client.Client(access_token=flask.session['access_token'])
+#     return flask.redirect(flask.url_for('runs.html'))
+
+
 
 @app.route('/login')
 def login():
     client = stravalib.client.Client()
+    form=RunsFilterForm()
     auth_url = client.authorization_url(client_id=app.config['CLIENT_ID'],
             scope='write',
             redirect_uri='http://127.0.0.1:7123/auth')
@@ -33,26 +44,45 @@ def login():
 @app.route('/logout')
 def logout():
     flask.session.pop('access_token')
-    return flask.redirect(flask.url_for('homepage'))
+    return flask.redirect(flask.url_for('runs'))
 
 @app.route('/update')
 def update():
     return flask.render_template('update.html')
 
-@app.route('/prediction')
-def prediction():
+@app.route('/calc', methods=['POST'])
+def calc():
+    form=RunsFilterForm()
+    print "Form minDist",form.minDist.data
+    form.populate_obj(app.runList)
+    #if form.raceDist.data[1]
+
+    #flask.flash("raceDist",app.runList.raceDist[0])
+    app.runList.filterList()
+    return flask.redirect(flask.url_for('runs'))
+
+
+
+@app.route('/')
+@app.route('/runs', methods=['GET', 'POST'])
+def runs():
+    print "APP.RUNLIST",app.runList
     if 'access_token' not in flask.session:
         return flask.redirect(flask.url_for('login'))
-    client = stravalib.client.Client(access_token=flask.session['access_token'])
-    athlete = client.get_athlete()
-    runList=client.get_activities(limit=10)
-    app.runList=runList
-    table=Runs.runsToTable(runList)
-    return flask.render_template('prediction.html', athlete=athlete, table=table)
+    if app.athlete is None:
+        client = stravalib.client.Client(access_token=flask.session['access_token'])
+        app.athlete = client.get_athlete()
+    #runList=client.get_activities(limit=10)
+    if app.runList is None:
+        app.runList=RunUtils.RunList(client.get_activities(limit=defNRuns), raceDist="5k")
+    form=RunsFilterForm(obj=app.runList)
+    avgRiegel, avgCam=app.runList.avgTimeStrs()
+    predString=flask.Markup("<h3>Average predictions for %s miles</h3>\n <h4>Riegel formula: %s</h4>\n <h4>Cameron formula %s</h4>\n"%(form.raceMi.data, avgRiegel, avgCam))
+    print predString
+    table=RunUtils.tableFromRunList(app.runList)
+    #print "TABLE ",table.html
 
-
-
-    
+    return flask.render_template('runs.html', athlete=app.athlete, predString=predString, form=form, table=table)    
 
 @app.route('/auth')
 def auth_done():
@@ -63,7 +93,7 @@ def auth_done():
             client_secret=app.config['CLIENT_SECRET'],
             code = code)
     flask.session['access_token'] = token
-    return flask.redirect(flask.url_for('homepage'))
+    return flask.redirect(flask.url_for('runs'))
 
 if __name__ == '__main__':
-    app.run(debug=True, port=80, host='0.0.0.0')
+    app.run(debug=False, port=7123)#, host='0.0.0.0')

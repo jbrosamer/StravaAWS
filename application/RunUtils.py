@@ -56,12 +56,15 @@ class Run:
 class RunList:
 	def __init__(self, activities=[], raceDist=None):
 		raceMi=raceDistInMi(raceDist)
+		print "RaceDist init",raceDist
 		self.runs=[Run(a, raceMi) for a in activities]
 		self.maxNRuns=1000
 		self.setDefRanges()
 		self.goodRuns=self.runs
+		self.raceMi=3.10686
 	def avgTimeStrs(self):
 		print "LEN(goodRuns)",len(self.goodRuns)
+		print "r.riegelTime for r in self.goodRuns",[r.riegelTime for r in self.goodRuns]
 		avgRiegel=time.strftime('%H:%M:%S', time.gmtime(sum(r.riegelTime for r in self.goodRuns)/len(self.goodRuns)))
 		avgCam=time.strftime('%H:%M:%S', time.gmtime(sum(r.cameronTime for r in self.goodRuns)/len(self.goodRuns)))
 		return avgRiegel, avgCam
@@ -81,12 +84,16 @@ class RunList:
 			self.startTimeRange=minAndMax([r.startTime for r in self.runs])
 			self.distRange=minAndMax([int(r.dist) for r in self.runs])
 			self.maxNRuns=len(self.runs)
-		print "DistRange",self.distRange
+		self.minPace, self.maxPace=self.paceRange[0],self.paceRange[1]
+		self.minDist, self.maxDict=self.distRange[0], self.distRange[1]
 	def filterList(self, raceDist=None):
 		self.goodRuns=[]
 		print "distRange",self.distRange
-		if raceDist is not None:
+		if raceDist is None:
+			raceMi=self.raceMi
+		elif raceDist is not None:
 			raceMi=raceDistInMi(raceDist)
+		print "raceDist ",raceDist
 		for r in self.runs:
 			if len(self.goodRuns) >=self.maxNRuns:
 				break

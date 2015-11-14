@@ -1,9 +1,14 @@
-from flask.ext.wtf import Form
-from wtforms import TextField, validators
+from flask_wtf import Form
+from wtforms import StringField, DecimalField, IntegerField, SelectField, SubmitField, DateField
+import datetime
+from wtforms.validators import DataRequired
 
-
-class EnterDBInfo(Form):
-    dbNotes = TextField(label='Items to add to DB', description="db_enter", validators=[validators.required(), validators.Length(min=0, max=128, message=u'Enter 128 characters or less')])    
-
-class RetrieveDBInfo(Form):
-    numRetrieve = TextField(label='Number of DB Items to Get', description="db_get", validators=[validators.required(), validators.Regexp('^\d{1}$',message=u'Enter a number between 1 and 10')])
+class RunsFilterForm(Form):
+	raceMi=SelectField("Race Dist", choices=[(3.10686, "5k"), (3.10686*2, "10k"), (13.1, 'Half marathon'), (26.2, 'Marathon')], default=(3.10686, "5k"))
+	minPace=DecimalField('Min Pace', default=5)
+	maxPace=DecimalField('Max Pace', default=30)
+	minDist=DecimalField('Min Dist', default=0.5)
+	maxDist=DecimalField('Max Dist', default=15.0)
+	minDate=DateField('Min Date')#, default=(datetime.date.today()), format="%m/%d/%y")
+	maxDate=DateField('Max Date')#, default=datetime.date.today(), format="%m/%d/%y")
+	submit=SubmitField('Recalculate')

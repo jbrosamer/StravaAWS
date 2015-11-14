@@ -1,41 +1,9 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Strava Racer</title>
-    <link rel="stylesheet" href="static/bootstrap.min.css">
-    <link rel="stylesheet" href="static/bootstrap-theme.min.css">
-    <link rel="stylesheet" href="static/bootstrap-slider.min.css">
-    <script src="http://code.jquery.com/jquery-latest.js"></script>
-    <script src="static/bootstrap.min.js" ></script>
-    <script src="static/bootstrap-slider.min.js" ></script>
-   <!--  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  --> 
-</head>
+{% include 'header.html' %}
   <body>
-      <nav class="navbar navbar-inverse navbar-fixed-top">
-      <div class="container-fluid">
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="#">Strava Racer</a>
-        </div>
-        <div id="navbar" class="navbar-collapse collapse">
-          <ul class="nav navbar-nav navbar-right">
-              <li><a href="{{ url_for('runs') }}">Runs</a></li>
-              <li><a href="{{ url_for('login') }}">Login</a></li>
-              <li><a href="{{ url_for('logout')}}">Logout</a></li>
-      <!--       <li><a href="#">Help</a></li> -->
-          </ul>
-<!--           <form class="navbar-form navbar-right">
-            <input type="text" class="form-control" placeholder="Search...">
-          </form> -->
-        </div>
-      </div>
-    </nav>
+{% include 'navbar.html' %}
+
         <div class="container-fluid">
       <div class="row">
           <h1 class="page-header">Strava Racer</h1>
@@ -58,42 +26,24 @@
             </div>
             <div class="col-xs-6 col-sm-3">
               <h4>Input runs</h4>
-              <div class="row">
-                <div class="col-xs-6 col-sm-3">
-                <span class="text-muted">Distance</span>
-
-              </div>
-                <div class="col-xs-6 col-sm-3">
-                <input class="slider" id="distSlide" type="text"/><br/>
-                </div>
-             
-
-              </div>
-              <br/><br/>
-              <div class="row">
-                <div class="col-xs-6 col-sm-3">
-                <span class="text-muted">Avg. Pace</span>
-              </div>
-                <div class="col-xs-6 col-sm-3">
-                <input class="slider" id="avgPaceSlide" type="text"/><br/>
-                </div>
-
-              </div>
-                <br/><br/>
-
-              <div class="row">
-                <div class="col-xs-6 col-sm-3">
-                <span class="text-muted">Number of runs</span>
-              </div>
-                <div class="col-xs-6 col-sm-3">
-                <input class="slider" id="numRunSlide" type="text"/><br/>
-                </div>
-              </div>
+        
+                <form action="{{ url_for('calc') }}" method=post>
+                {{ form.hidden_tag() }}
+                <dl>
+                  <dt>Race distance
+                  <dd>{{ form.raceMi }}
+                  <dt>Pace (min/mi)
+                  <dd>{{ form.minPace }}
+                  <dd>{{ form.maxPace }}
+                  <dt>Distance (mi)
+                  <dd>{{ form.minDist }}
+                  <dd>{{ form.maxDist }}
+                  <dt>{{ form.submit }}
+                </dl>
+              </form>
             </div>
             <div class="container-fluid">
               
-        
-                <button type="submit" id="calc" class="btn btn-lg btn-primary">(Re)calculate Race times</button>
 
                 {{ predString|default('') }}
               </div>
@@ -101,40 +51,17 @@
           </div>
 <!--     <div class="container-fluid">
       <div class="row"> -->
+            {% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class=flashes>
+    {% for message in messages %}
+      <h4>{{ message }}</h4>
+    {% endfor %}
+    </ul>
+  {% endif %}
+{% endwith %}
           {% block content %}{% endblock %}
       </div>
     </div>   
   </body>
 </html>
-<script type="text/javascript">
-$(".dropdown-menu li a").click(function(){
-
-  $(this).parents(".btn-group").find('.selection').text($(this).text());
-  $(this).parents(".btn-group").find('.selection').val($(this).text());
-});
-$("#distSlide").slider({ min: {{ runs.distRange[0]|default(0) }}, max: {{ runs.distRange[1]|default(50) }}, value: [ {{ runs.distRange[0]|default(0) }}, {{ runs.distRange[1]|default(50) }}], focus: true, tooltip: 'always' });
-$("#numRunSlide").slider({ min: 0, max: {{ runs.maxNRuns|default(10) }}, value: {{ runs.maxNRuns|default(10) }}, focus: true, tooltip: 'always' });
-$("#avgPaceSlide").slider({ min: {{ runs.paceRange[0]|default(5) }}, max: {{ runs.paceRange[1]|default(15) }}, value: [ {{ runs.paceRange[0]|default(5) }}, {{ runs.paceRange[1]|default(15) }}], focus: true, tooltip: 'always' });
-
-
-$(".dropdown-menu li a").click(function(){
-
-  $(this).parents(".btn-group").find('.selection').text($(this).text());
-  $(this).parents(".btn-group").find('.selection').val($(this).text());
-});
-
-$('#calc').click( function() {
-
-
-    var data={raceDist: $(".dropdown-menu li a").parents(".btn-group").find('.selection').text(), minDist: $("#distSlide").data('slider').getValue()[0], maxDist: $("#distSlide").data('slider').getValue()[1], minPace : $("#avgPaceSlide").data('slider').getValue()[0], maxPace : $("#avgPaceSlide").data('slider').getValue()[1], maxNRuns: $("#numRunSlide").data('slider').getValue()};
-    //var data={a:"1"};
-    $.ajax({
-        type : "POST",
-        url : "/calc",
-        data: data
-    });
-
-
-});
-
-</script>
