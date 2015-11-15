@@ -2,30 +2,41 @@
 <html>
 {% include 'header.html' %}
   <body>
-{% include 'navbar.html' %}
-
+    <div class="container">
+          <nav class="navbar navbar-default">
         <div class="container-fluid">
-      <div class="row">
-          <h1 class="page-header">Strava Racer</h1>
+          <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+              <li><a href="{{ url_for('runs') }}">Runs</a></li>
+              <li><a href="{{ url_for('images') }}">Images</a></li>
+              <li><a href="{{ url_for('login') }}">Login</a></li>
+              <li><a href="{{ url_for('logout')}}">Logout</a></li>
 
-          <div class="row">
-            <div class="col-xs-6 col-sm-3">
-              
-              <h4>Race distance</h4>
-              <div class="btn-group">
-                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-                 <span class="selection">5k</span><span class="caret"></span>
-                </button>
-                <ul class="dropdown-menu" role="menu">
-                  <li><a href="#">5k</a></li>
-                  <li><a href="#">10k</a></li>
-                  <li><a href="#">Half marathon</a></li>
-                  <li><a href="#">Marathon</a></li>
+<!--               <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Dropdown <span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                  <li><a href="#">Action</a></li>
+                  <li><a href="#">Another action</a></li>
+                  <li><a href="#">Something else here</a></li>
+                  <li role="separator" class="divider"></li>
+                  <li class="dropdown-header">Nav header</li>
+                  <li><a href="#">Separated link</a></li>
+                  <li><a href="#">One more separated link</a></li>
                 </ul>
-              </div>
-            </div>
-            <div class="col-xs-6 col-sm-3">
-              <h4>Input runs</h4>
+              </li> -->
+<!--             </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li class="active"><a href="./">Default <span class="sr-only">(current)</span></a></li>
+              <li><a href="../navbar-static-top/">Static top</a></li>
+              <li><a href="../navbar-fixed-top/">Fixed top</a></li>
+            </ul> -->
+          </div><!--/.nav-collapse -->
+        </div><!--/.container-fluid -->
+      </nav>
+    </nav>
+        <div class="jumbotron">
+        <h1>Strava Racer</h1>
+        <h4>Input runs</h4>
         
                 <form action="{{ url_for('calc') }}" method=post>
                 {{ form.hidden_tag() }}
@@ -41,14 +52,13 @@
                   <dt>{{ form.submit }}
                 </dl>
               </form>
-            </div>
-            <div class="container-fluid">
+              <p>
               
-
                 {{ predString|default('') }}
-              </div>
-            </div>
-          </div>
+              </p>
+    </div>
+
+
 <!--     <div class="container-fluid">
       <div class="row"> -->
             {% with messages = get_flashed_messages() %}
@@ -61,7 +71,7 @@
   {% endif %}
 {% endwith %}
           {% block content %}{% endblock %}
-      </div>
+   
     </div>   
   </body>
 </html>
