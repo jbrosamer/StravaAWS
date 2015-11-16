@@ -43,6 +43,7 @@ class Run:
 		self.maxPace=minPerMile(act.max_speed)
 		self.el=unithelper.feet(act.total_elevation_gain)
 		self.name=act.name
+		self.raceMi=raceMi
 		if raceMi is not None:
 			self.predictTimes(raceMi)
 		else:
@@ -90,17 +91,16 @@ class RunList:
 		self.goodRuns=[]
 		print "distRange",self.distRange
 		if raceDist is None:
-			raceMi=self.raceMi
-		elif raceDist is not None:
-			raceMi=raceDistInMi(raceDist)
-		print "raceDist ",raceDist
+			raceMi=float(self.raceMi)
+		else:
+			raceMi=float(raceDistInMi(raceDist))
+		print "raceMi ",raceMi,type(raceMi)
 		for r in self.runs:
 			if len(self.goodRuns) >=self.maxNRuns:
 				break
 			#if betweenMinMax(r.date, self.dateRange) and betweenMinMax(int(r.pace.split(":")[0]), self.paceRange) and betweenMinMax(int(r.el), self.elRange) and betweenMinMax(r.startTime, self.startTimeRange) and betweenMinMax(r.dist, self.distRange):
 			if betweenMinMax(r.dist, self.distRange):
-				if raceDist is not None:
-					r.predictTimes(raceMi)
+				r.predictTimes(raceMi)
 				self.goodRuns.append(r)
 		return self.goodRuns
 class RunTable(Table):
@@ -111,8 +111,8 @@ class RunTable(Table):
 	startTime=Col("Start time")
 	pace=Col("Avg. Pace")
 	maxPace=Col("Max Pace")
-	cameron=Col("Cameron Time")
-	riegel=Col("Riegel Time")
+	cameron=Col("Cameron Prediction")
+	riegel=Col("Riegel Prediction")
 	name=Col("Name")
 def tableFromRunList(runList):
 	items=list()

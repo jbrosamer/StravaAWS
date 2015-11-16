@@ -2,8 +2,9 @@
 
 import flask
 import logging
-import stravalib
+import stravalib, tempfile
 import os, sys
+from flask.ext.sqlalchemy import SQLAlchemy
 
 
 
@@ -16,6 +17,7 @@ defNRuns=10
 app = flask.Flask(__name__)
 app.runList=None
 app.athlete=None
+app.predString=''
 
 if os.environ.get('FIXSTRAVA_CONFIG') is None:
     os.environ['FIXSTRAVA_CONFIG']='settings.txt'
@@ -23,13 +25,48 @@ app.config.from_envvar('FIXSTRAVA_CONFIG')
 
 logging.basicConfig(level=logging.INFO)
 
-# @app.route('/')
-# def runs():
-#     if 'access_token' not in flask.session:
-#         return flask.redirect(flask.url_for('login'))
-#     client = stravalib.client.Client(access_token=flask.session['access_token'])
-#     return flask.redirect(flask.url_for('runs.html'))
 
+@app.route("/images")
+def images():
+    import datetime
+    import StringIO
+    import random
+    from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+    from matplotlib.figure import Figure
+    from matplotlib.dates import DateFormatter
+    fig=Figure()
+    ax1=fig.add_subplot(121)
+    ax2=fig.add_subplot(122, sharey=ax1)
+    
+    dates=[r.date for r in app.runList.goodRuns]
+    dist=[r.dist for r in app.runList.goodRuns]
+    riegel=[r.riegelTime/60. for r in app.runList.goodRuns]
+    cameron=[r.cameronTime/60. for r in app.runList.goodRuns]
+    ymin=min(cameron)
+    ymax=max(cameron)
+    ax1.plot_date(dates, cameron,c='b')
+    ax1.plot_date(dates, riegel,c='r')
+
+    ax1.xaxis.set_major_formatter(DateFormatter('%m-%d'))
+    c=ax2.scatter(dist, cameron, c='b')
+    r=ax2.scatter(dist, riegel, c='r')
+    fig.autofmt_xdate()
+    ax1.set_ylim([ymin-1.0, ymax+1.0])
+    ax2.set_ylim([ymin-1.0, ymax+1.0])
+    ax1.set_ylabel("Predicted time (min)")
+    ax1.set_xlabel("Date")
+    ax2.set_xlabel("Distance (mi)")
+
+    fig.legend([r,c], ["Riegel", "Cameron"])
+    canvas=FigureCanvas(fig)
+    f = tempfile.NamedTemporaryFile(
+     dir='static/temp',
+     suffix='.png',delete=False)
+    canvas.print_png(f)
+    f.close()
+
+    form=RunsFilterForm(obj=app.runList)
+    return flask.render_template('image.html', athlete=app.athlete, predString=app.predString, form=form, plotPng="static/temp/"+f.name.split("/")[-1]) 
 
 
 @app.route('/login')
@@ -54,6 +91,7 @@ def update():
 def calc():
     form=RunsFilterForm()
     print "Form minDist",form.minDist.data
+    print "type(app.runList)",type(app.runList)
     form.populate_obj(app.runList)
     #if form.raceDist.data[1]
 
@@ -76,13 +114,13 @@ def runs():
     if app.runList is None:
         app.runList=RunUtils.RunList(client.get_activities(limit=defNRuns), raceDist="5k")
     form=RunsFilterForm(obj=app.runList)
+    images()
     avgRiegel, avgCam=app.runList.avgTimeStrs()
-    predString=flask.Markup("<h3>Average predictions for %s miles</h3>\n <h4>Riegel formula: %s</h4>\n <h4>Cameron formula %s</h4>\n"%(form.raceMi.data, avgRiegel, avgCam))
-    print predString
+    app.predString=flask.Markup("<h3>Average predictions for %s miles</h3>\n <h4>Riegel formula: %s</h4>\n <h4>Cameron formula %s</h4>\n"%(form.raceMi.data, avgRiegel, avgCam))
     table=RunUtils.tableFromRunList(app.runList)
     #print "TABLE ",table.html
 
-    return flask.render_template('runs.html', athlete=app.athlete, predString=predString, form=form, table=table)    
+    return flask.render_template('runs.html', athlete=app.athlete, predString=app.predString, form=form, table=table)    
 
 @app.route('/auth')
 def auth_done():
