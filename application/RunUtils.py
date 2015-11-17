@@ -5,7 +5,7 @@ import RunAnalysis
 
 def minPerMile(meterPerSec):
 	secPerMile=unithelper.mile/unithelper.meter/float(meterPerSec)
-	return time.strftime('%M:%S', time.gmtime(secPerMile))
+	return secPerMile/60.
 def minAndMax(l):
 	return [min(l), max(l)]
 def betweenMinMax(val, minMax):
@@ -25,13 +25,7 @@ def raceDistInMi(raceDist):
 			raceMi=None
 	return raceMi
 
-# def runsToTable(runList):
-# 	items=list()
-# 	for act in runList:
-# 		items.append(dict(dist=unithelper.miles(act.distance), time=time.strftime('%H:%M:%S', time.gmtime(act.moving_time.seconds)), date=act.start_date, pace=minPerMile(act.average_speed), maxPace=minPerMile(act.max_speed), el=act.total_elevation_gain, name=act.name))
-# 	table=tableCls(items)
 
-# 	return table
 class Run:
 	def __init__(self, act, raceMi=0):
 		self.id=act.id
@@ -50,22 +44,22 @@ class Run:
 			self.riegelTime=None
 			self.cameronTime=None
 	def predictTimes(self, raceDist):
-		print "type raceDist",type(raceDist)
 		self.riegelTime=RunAnalysis.riegelFormula(raceDist, self.dist, self.time)
 		self.cameronTime=RunAnalysis.cameronFormula(raceDist, self.dist, self.time)
+	
 
 class RunList:
 	def __init__(self, activities=[], raceDist=None):
 		raceMi=raceDistInMi(raceDist)
 		print "RaceDist init",raceDist
-		self.runs=[Run(a, raceMi) for a in activities]
+		self.runs=[Run(a, raceMi) for a in activities if self.validRun(a) ]
 		self.maxNRuns=1000
 		self.setDefRanges()
 		self.goodRuns=self.runs
 		self.raceMi=3.10686
+	def validRun(self, act):
+		return float(unithelper.miles(act.distance)) > 0.5 and act.moving_time.seconds > 5.*60 and float(act.average_speed) > 0. and float(act.max_speed) > 0.
 	def avgTimeStrs(self):
-		print "LEN(goodRuns)",len(self.goodRuns)
-		print "r.riegelTime for r in self.goodRuns",[r.riegelTime for r in self.goodRuns]
 		avgRiegel=time.strftime('%H:%M:%S', time.gmtime(sum(r.riegelTime for r in self.goodRuns)/len(self.goodRuns)))
 		avgCam=time.strftime('%H:%M:%S', time.gmtime(sum(r.cameronTime for r in self.goodRuns)/len(self.goodRuns)))
 		return avgRiegel, avgCam
@@ -76,30 +70,26 @@ class RunList:
 			self.paceRange=[0., 20.]
 			self.elRange=[-10000, 10000]
 			self.startTimeRange=[time.time.strptime("00:00", "%H:%M"), time.time.strptime("23:59", "%H:%M")]
-			self.distRange=[0., 50.]
+			self.minDist, self.maxDict=[0.5, 50.]
 			self.maxNRuns=0
 		else:
 			self.dateRange=minAndMax([r.date for r in self.runs])
-			self.paceRange=minAndMax([int(r.pace.split(":")[0]) for r in self.runs])
+			self.minPace, self.maxPace=minAndMax([r.pace for r in self.runs])
 			self.elRange=minAndMax([int(r.el) for r in self.runs])
 			self.startTimeRange=minAndMax([r.startTime for r in self.runs])
-			self.distRange=minAndMax([int(r.dist) for r in self.runs])
+			self.minDist, self.maxDict=minAndMax([(r.dist) for r in self.runs])
 			self.maxNRuns=len(self.runs)
-		self.minPace, self.maxPace=self.paceRange[0],self.paceRange[1]
-		self.minDist, self.maxDict=self.distRange[0], self.distRange[1]
 	def filterList(self, raceDist=None):
 		self.goodRuns=[]
-		print "distRange",self.distRange
 		if raceDist is None:
 			raceMi=float(self.raceMi)
 		else:
 			raceMi=float(raceDistInMi(raceDist))
-		print "raceMi ",raceMi,type(raceMi)
 		for r in self.runs:
 			if len(self.goodRuns) >=self.maxNRuns:
 				break
-			#if betweenMinMax(r.date, self.dateRange) and betweenMinMax(int(r.pace.split(":")[0]), self.paceRange) and betweenMinMax(int(r.el), self.elRange) and betweenMinMax(r.startTime, self.startTimeRange) and betweenMinMax(r.dist, self.distRange):
-			if betweenMinMax(r.dist, self.distRange):
+			# if betweenMinMax(r.date, self.dateRange) and betweenMinMax(int(r.pace.split(":")[0]), self.paceRange) and betweenMinMax(int(r.el), self.elRange) and betweenMinMax(r.startTime, self.startTimeRange) and betweenMinMax(r.dist, self.distRange):
+			if betweenMinMax(r.dist, [self.minDist, self.maxDist]):
 				r.predictTimes(raceMi)
 				self.goodRuns.append(r)
 		return self.goodRuns

@@ -13,7 +13,7 @@ sys.path.append("./application")
 import RunUtils
 from forms import RunsFilterForm
 
-defNRuns=10
+defNRuns=100
 app = flask.Flask(__name__)
 app.runList=None
 app.athlete=None
@@ -42,8 +42,8 @@ def images():
     dist=[r.dist for r in app.runList.goodRuns]
     riegel=[r.riegelTime/60. for r in app.runList.goodRuns]
     cameron=[r.cameronTime/60. for r in app.runList.goodRuns]
-    ymin=min(cameron)
-    ymax=max(cameron)
+    ymin=min(cameron+riegel)
+    ymax=max(cameron+riegel)
     ax1.plot_date(dates, cameron,c='b')
     ax1.plot_date(dates, riegel,c='r')
 
@@ -91,11 +91,9 @@ def update():
 def calc():
     form=RunsFilterForm()
     print "Form minDist",form.minDist.data
-    print "type(app.runList)",type(app.runList)
     form.populate_obj(app.runList)
+    print "Run minDist",app.runList.minDist
     #if form.raceDist.data[1]
-
-    #flask.flash("raceDist",app.runList.raceDist[0])
     app.runList.filterList()
     return flask.redirect(flask.url_for('runs'))
 
@@ -104,7 +102,6 @@ def calc():
 @app.route('/')
 @app.route('/runs', methods=['GET', 'POST'])
 def runs():
-    print "APP.RUNLIST",app.runList
     if 'access_token' not in flask.session:
         return flask.redirect(flask.url_for('login'))
     if app.athlete is None:
@@ -118,7 +115,6 @@ def runs():
     avgRiegel, avgCam=app.runList.avgTimeStrs()
     app.predString=flask.Markup("<h3>Average predictions for %s miles</h3>\n <h4>Riegel formula: %s</h4>\n <h4>Cameron formula %s</h4>\n"%(form.raceMi.data, avgRiegel, avgCam))
     table=RunUtils.tableFromRunList(app.runList)
-    #print "TABLE ",table.html
 
     return flask.render_template('runs.html', athlete=app.athlete, predString=app.predString, form=form, table=table)    
 
